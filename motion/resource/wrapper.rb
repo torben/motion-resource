@@ -1,5 +1,7 @@
 module MotionResource
   class WrapperNotDefinedError < Exception; end
+  class URLNotDefinedError < Exception; end
+  class ActionNotImplemented < Exception; end
 
   module ApiWrapper
     def self.included(base)
@@ -7,11 +9,14 @@ module MotionResource
     end
 
     module PublicClassMethods
+      # Returns the last updated at or nil value of Model
       def lastUpdate
-        order(:updatedAt).first.try(:updatedAt)
+        order(:updated_at).first.try(:updated_at)
       end
 
-      # ActiveResource
+      # Loads the given URL and parse the JSON for new models.
+      # If the models are present, the model will update.
+      # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
       def fetch(site, params = {}, &block)
         raise MotionResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
         BW::HTTP.get(site, params) do |response|
@@ -25,6 +30,8 @@ module MotionResource
         end
       end
 
+      # Parses given JSON object and saves the founded models.
+      # Returns an array with models, or the founded model
       def updateModels(json)
         if json.is_a?(Array)
           models = []
@@ -45,6 +52,7 @@ module MotionResource
         end
       end
 
+      # Builds a model for given JSON object. Returns a new or presend model.
       def buildModel(json)
         classname = name.downcase
 
@@ -63,16 +71,22 @@ module MotionResource
       end
     end
 
+    # Instance methods
+
+    # Saves the current model. Calls super when block is not given.
+    # If block is given, the url method will be needed to call the remote server.
+    # The answer of the server will be parsed and stored.
+    # If the record is a new one, a POST request will be fired, otherwise a PUT call comes to the server.
     def save(options = {}, &block)
       if block.present?
-        NSException.raise("URL is not defined for #{self.class.name}!", format: "error") unless self.class.respond_to?(:url)
+        raise MotionResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
 
         action = if new_record?
           "create"
         elsif self.id.present?
           "update"
         else
-          NSException.raise("Action ist not implemented for #{self.class.name}!", format: "error")
+          raise MotionResource::ActionNotImplemented.new "Action ist not implemented for #{self.class.name}!"
         end
 
         model = self
@@ -107,6 +121,7 @@ module MotionResource
       end
     end
 
+    # Returns a hash with given model
     def buildHashFromModel(mainKey, model)
       hash = {
         mainKey => {}
@@ -134,8 +149,11 @@ module MotionResource
       return hash
     end
 
+    # Loads the given URL and parse the JSON for a model.
+    # If the model is present, the model will updates.
+    # If block given, the block will called, when the the model is saved. The model will be passed as an argument to the block.
     def fetch(site, params, &block)
-      NSException.raise("Wrapper is not defined!", format: "error") unless self.class.respond_to?(:wrapper)
+      raise MotionResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.class.respond_to?(:wrapper)
       model = self
       BW::HTTP.get(site, params) do |response|
         if response.ok? && response.body.present?
@@ -150,6 +168,9 @@ module MotionResource
       end
     end
 
+    # Wraps the current model with the given JSON.
+    # All the fields found in JSON and self.wrapper will be parsed.
+    # Returns true, when no error exists
     def wrap(modelJson)
       return unless self.class.respond_to?(:wrapper)
 

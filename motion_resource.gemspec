@@ -4,8 +4,8 @@ require File.expand_path('../motion/version', __FILE__)
 Gem::Specification.new do |gem|
   gem.authors       = ["Torben Toepper"]
   gem.email         = ["lshadyl@googlemail.com"]
-  gem.description   = "Simple API Wrapper for MotionModel on RubyMotion"
-  gem.summary       = "Simple API Wrapper for MotionModel on RubyMotion"
+  gem.description   = "Simple JSON API Wrapper for MotionModel on RubyMotion"
+  gem.summary       = "Simple JSON API Wrapper for MotionModel on RubyMotion"
   gem.homepage      = "https://github.com/torben/MotionResource"
 
   gem.files         = `git ls-files`.split($\)

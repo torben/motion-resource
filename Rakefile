@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 require "bundler/gem_tasks"
 $:.unshift("/Library/RubyMotion/lib")
-require 'motion/project'
+require 'motion/project/template/ios'
 require 'bundler'
 Bundler.require
 
 $:.unshift(File.expand_path('../lib', __FILE__))
 require 'motion_resource'
+require 'bubble-wrap/core'
+require 'bubble-wrap/http'
 
 Motion::Project::App.setup do |app|
   # Use `rake config' to see complete project settings.

@@ -135,7 +135,7 @@ module MotionResource
     end
 
     def fetch(site, params, &block)
-      NSException.raise("Wrapper is not defined!", format: "error") unless self.class.respond_to?"wrapper"
+      NSException.raise("Wrapper is not defined!", format: "error") unless self.class.respond_to?(:wrapper)
       model = self
       BW::HTTP.get(site, params) do |response|
         if response.ok? && response.body.present?
@@ -151,7 +151,7 @@ module MotionResource
     end
 
     def wrap(modelJson)
-      return unless self.class.respond_to? "wrapper"
+      return unless self.class.respond_to?(:wrapper)
 
       self.class.wrapper[:fields].each do |online, local|
         if modelJson.respond_to?("key?") && modelJson.key?("#{online}")

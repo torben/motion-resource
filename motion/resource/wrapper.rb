@@ -1,4 +1,4 @@
-module MotionResource
+module MotionModelResource
   class WrapperNotDefinedError < Exception; end
   class URLNotDefinedError < Exception; end
   class ActionNotImplemented < Exception; end
@@ -18,7 +18,7 @@ module MotionResource
       # If the models are present, the model will update.
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
       def fetch(site, params = {}, &block)
-        raise MotionResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
+        raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
         BW::HTTP.get(site, params) do |response|
           models = []
           if response.ok? && response.body.present?
@@ -79,14 +79,14 @@ module MotionResource
     # If the record is a new one, a POST request will be fired, otherwise a PUT call comes to the server.
     def save(options = {}, &block)
       if block.present?
-        raise MotionResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
+        raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
 
         action = if new_record?
           "create"
         elsif self.id.present?
           "update"
         else
-          raise MotionResource::ActionNotImplemented.new "Action ist not implemented for #{self.class.name}!"
+          raise MotionModelResource::ActionNotImplemented.new "Action ist not implemented for #{self.class.name}!"
         end
 
         model = self
@@ -153,7 +153,7 @@ module MotionResource
     # If the model is present, the model will updates.
     # If block given, the block will called, when the the model is saved. The model will be passed as an argument to the block.
     def fetch(site, params, &block)
-      raise MotionResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.class.respond_to?(:wrapper)
+      raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.class.respond_to?(:wrapper)
       model = self
       BW::HTTP.get(site, params) do |response|
         if response.ok? && response.body.present?

@@ -1,7 +1,7 @@
-MotionResource: Simple JSON API Wrapper for MotionModel on RubyMotion
+MotionModelResource: Simple JSON API Wrapper for MotionModel on RubyMotion
 ================
 
-MotionResource is a simple wrapper to store your remote data in MotionModel objects. It is good for users who have a
+MotionModelResource is a simple wrapper to store your remote data in MotionModel objects. It is good for users who have a
 REST API and want to have it in an iOS app.
 
 You need to have MotionModel ready, if you want to use this implementation: https://github.com/sxross/MotionModel
@@ -32,7 +32,7 @@ end
 Tune this up, by adding:
 ```ruby
 ...
-  include MotionResource::ApiWrapper
+  include MotionModelResource::ApiWrapper
 
   def self.url
     "https://example.com/tasks"
@@ -95,7 +95,7 @@ Tip: If you have the lastSyncedAt column in your model, this will automatacally 
 
 ### Saving Remote Models
 
-If you want to store your local model, you can simply do this with MotionResource. You just need to configure an url class method and giving a block for the save method:
+If you want to store your local model, you can simply do this with MotionModelResource. You just need to configure an url class method and giving a block for the save method:
 
 ```ruby
 task = Task.first

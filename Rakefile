@@ -6,13 +6,13 @@ require 'bundler'
 Bundler.require
 
 $:.unshift(File.expand_path('../lib', __FILE__))
-require 'motion_resource'
+require 'motion_model_resource'
 require 'bubble-wrap/core'
 require 'bubble-wrap/http'
 
 Motion::Project::App.setup do |app|
   # Use `rake config' to see complete project settings.
-  app.name = 'MotionResource'
+  app.name = 'MotionModelResource'
   app.delegate_class = 'FakeDelegate'
   app.files = (app.files + Dir.glob('./app/**/*.rb')).uniq
 end

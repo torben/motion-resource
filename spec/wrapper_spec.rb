@@ -1,7 +1,7 @@
 class UserWithOutWrapper
   include MotionModel::Model
   include MotionModel::ArrayModelAdapter
-  include MotionResource::ApiWrapper
+  include MotionModelResource::ApiWrapper
   columns       name:   :string,
                 email:  :string,
                 age:    :integer,
@@ -11,7 +11,7 @@ end
 class User
   include MotionModel::Model
   include MotionModel::ArrayModelAdapter
-  include MotionResource::ApiWrapper
+  include MotionModelResource::ApiWrapper
 
   def self.url
     "http://example.com/users"
@@ -44,7 +44,7 @@ end
 class Task
   include MotionModel::Model
   include MotionModel::ArrayModelAdapter
-  include MotionResource::ApiWrapper
+  include MotionModelResource::ApiWrapper
 
   def self.url
     "http://example.com/tasks"
@@ -68,7 +68,7 @@ end
 class Plan
   include MotionModel::Model
   include MotionModel::ArrayModelAdapter
-  include MotionResource::ApiWrapper
+  include MotionModelResource::ApiWrapper
 
   def self.url
     "http://example.com/plans"
@@ -94,7 +94,7 @@ describe "Fetching a model" do
   it "should not wrap a model without wrapper method" do
     lambda{
       UserWithOutWrapper.fetch("http://localhost:3000/users/1")
-    }.should.raise(MotionResource::WrapperNotDefinedError)
+    }.should.raise(MotionModelResource::WrapperNotDefinedError)
   end
 
   it "should create a new model with API call" do

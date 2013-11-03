@@ -1,3 +1,3 @@
-module MotionResource
-  VERSION = "0.1.0"
+module MotionModelResource
+  VERSION = "0.1.2"
 end

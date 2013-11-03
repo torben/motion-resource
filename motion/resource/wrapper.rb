@@ -176,7 +176,8 @@ module MotionModelResource
 
       self.class.wrapper[:fields].each do |online, local|
         if modelJson.respond_to?("key?") && modelJson.key?("#{online}")
-          self.send("#{local}=", modelJson[online])
+          value = parseValue(local, modelJson[online])
+          self.send("#{local}=", value)
         end
       end
 
@@ -191,6 +192,15 @@ module MotionModelResource
       end
 
       true
+    end
+
+    # Parses given value for key in the right format for MotionModel.
+    # Currently only Date/Time support needed
+    def parseValue(key, value)
+      case self.column_type(key.to_sym)
+      when :date, :time then MotionModelResource::DateParser.parseDate value
+      else value
+      end
     end
   end
 end

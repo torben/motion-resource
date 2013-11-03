@@ -1,5 +1,5 @@
 MotionModelResource: Simple JSON API Wrapper for MotionModel on RubyMotion
-================
+==========================================================================
 
 MotionModelResource is a simple wrapper to store your remote data in MotionModel objects. It is good for users who have a
 REST API and want to have it in an iOS app.
@@ -8,12 +8,32 @@ You need to have MotionModel ready, if you want to use this implementation: http
 
 
 ### Overview
+* [Installation](#installation)
 * [Setup](#setup)
 * [Usage](#usage)
 
 
+Installation
+------------
+Add the following line to your `Gemfile`:
+
+`gem "motion-model-resource"`
+
+You need to require the Gem. Insert the
+following immediately before `Motion::Project::App.setup`:
+
+```ruby
+require 'motion_model' # If you haven't already
+require 'motion_model_resource'
+```
+
+Then, update your bundle:
+
+`bundle`
+
+
 Setup
-================
+-----
 
 First of all you will need a normal MotionModel::Model:
 
@@ -58,7 +78,7 @@ The url method will be used for saving a remote model. Maybe in future for a rou
 
 
 Usage
-================
+-----
 
 ### Getting Remote Models
 
@@ -66,6 +86,25 @@ Fetching your API by calling "fetch" on your model class:
 
 ```ruby
 Task.fetch("https://example.com/tasks")
+```
+
+**Example Response**
+```javascript
+[{
+  "id": 1,
+  "name: 'Buy beer',
+  "long_name": 'Many, many, many beer!',
+  "due_date": "2013-11-03T20:40:00+01:00",
+  "updated_at": "2013-11-03T20:20:10+01:00",
+  "created_at": "2013-11-03T20:06:01+01:00"
+},{
+  "id": 2,
+  "name: 'Drink beer',
+  "long_name": 'Beer, beer, beer, beer',
+  "due_date": "2013-11-03T21:40:00+01:00",
+  "updated_at": "2013-11-03T20:20:10+01:00",
+  "created_at": "2013-11-03T20266:01+01:00"
+}]
 ```
 
 After this call, you will have a bunch of records in your collection.
@@ -90,7 +129,7 @@ task = Task.first
 task.fetch("https://example.com/tasks")
 ```
 
-Tip: If you have the lastSyncedAt column in your model, this will automatacally set to the current timestamp!
+**Tip:** If you have the lastSyncedAt column in your model, this will automatacally set to the current timestamp!
 
 
 ### Saving Remote Models

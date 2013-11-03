@@ -6,7 +6,7 @@ Gem::Specification.new do |gem|
   gem.email         = ["lshadyl@googlemail.com"]
   gem.description   = "Simple JSON API Wrapper for MotionModel on RubyMotion"
   gem.summary       = "Simple JSON API Wrapper for MotionModel on RubyMotion"
-  gem.homepage      = "https://github.com/torben/MotionResource"
+  gem.homepage      = "https://github.com/torben/motion-resource"
 
   gem.files         = `git ls-files`.split($\)
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})

@@ -92,14 +92,14 @@ Task.fetch("https://example.com/tasks")
 ```javascript
 [{
   "id": 1,
-  "name: 'Buy beer',
+  "name": 'Buy beer',
   "long_name": 'Many, many, many beer!',
   "due_date": "2013-11-03T20:40:00+01:00",
   "updated_at": "2013-11-03T20:20:10+01:00",
   "created_at": "2013-11-03T20:06:01+01:00"
 },{
   "id": 2,
-  "name: 'Drink beer',
+  "name": 'Drink beer',
   "long_name": 'Beer, beer, beer, beer',
   "due_date": "2013-11-03T21:40:00+01:00",
   "updated_at": "2013-11-03T20:20:10+01:00",

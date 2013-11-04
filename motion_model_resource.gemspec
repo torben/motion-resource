@@ -10,7 +10,7 @@ Gem::Specification.new do |gem|
 
   gem.files         = `git ls-files`.split($\)
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
-  gem.name          = "motion-model-resource"
+  gem.name          = "motion_model_resource"
   gem.require_paths = ["lib"]
   gem.add_dependency 'bubble-wrap', '>= 1.3.0'
   gem.add_dependency 'motion-support', '>=0.1.0'

@@ -146,9 +146,9 @@ module MotionModelResource
 
         case action
         when "create"
-          BW::HTTP.post("#{Api_url}/#{self.class.name}", {payload: hash}, &requestBlock)
+          BW::HTTP.post("#{Api_url}/#{self.class.name.pluralize}", {payload: hash}, &requestBlock)
         when "update"
-          BW::HTTP.put("#{Api_url}/#{self.class.name}/#{model.id}", {payload: hash}, &requestBlock)
+          BW::HTTP.put("#{Api_url}/#{self.class.name.pluralize}/#{model.id}", {payload: hash}, &requestBlock)
         end
       else
         super

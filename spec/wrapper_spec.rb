@@ -31,11 +31,12 @@ class User
     }
   end
 
-  columns name:     :string,
-          plan_id:  :plan_id,
-          email:    :string,
-          age:      :integer,
-          admin:    :boolean
+  columns name:       :string,
+          plan_id:    :plan_id,
+          email:      :string,
+          age:        :integer,
+          admin:      :boolean,
+          lastSyncAt: :time
 
   has_many :tasks
   belongs_to :plan
@@ -61,7 +62,8 @@ class Task
     }
   end
 
-  columns name: :string
+  columns name:       :string,
+          updated_at: :date
   belongs_to :user
 end
 
@@ -118,6 +120,7 @@ describe "Fetching a model" do
       user.email.should.equal("peter@pan.de")
       user.age.should.equal(14)
       user.admin.should.equal(false)
+      user.lastSyncAt.should.not == nil
     end
   end
 
@@ -168,19 +171,34 @@ describe "Fetching a model" do
     end
   end
 
-  describe '#parseValue' do
-    it 'should parse a date in the right format for MotionModel' do
-      time_string = "2013-11-03T16:59:35+01:00"
-
-      MotionModelResource::DateParser.parseDate(time_string).should.equal("2013-11-03 15:59:35 +0000")
+  describe 'Class Methods' do
+    before do
+      3.times { User.create }
+      Task.create(id: 22)
+      Task.create(id: 33)
     end
 
-    it 'should return nil, when giving a wrong time' do
-      time_string = "2342"
-      time_string2 = "2013-21-03T16:59:35+01:00"
+    describe '#updateModels' do
+      it 'should return nil, if model has no updated_at column' do
+        User.lastUpdate.should == nil
+      end
 
-      MotionModelResource::DateParser.parseDate(time_string).should.equal nil
-      MotionModelResource::DateParser.parseDate(time_string2).should.equal nil
+      it 'should return last updated_at, if model has updated_at column' do
+        Task.lastUpdate.to_s.should.equal Task.find(33).updated_at.to_s
+      end
+    end
+
+    describe '#touchSync' do
+      it 'should sets a timestap when calling' do
+        u = User.new
+        u.touchSync
+        u.lastSyncAt.class.should == Time
+      end
+
+      it 'should return nil if model has no lastSyncAt column' do
+        t = Task.new
+        t.touchSync.should == nil
+      end
     end
   end
 end

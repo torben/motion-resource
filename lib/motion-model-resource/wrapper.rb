@@ -11,7 +11,8 @@ module MotionModelResource
     module PublicClassMethods
       # Returns the last updated at or nil value of Model
       def lastUpdate
-        order(:updated_at).first.try(:updated_at)
+        return unless columns.include? :updated_at
+        order{|one, two| two.updated_at <=> one.updated_at}.first.try(:updated_at)
       end
 
       # Loads the given URL and parse the JSON for new models.
@@ -19,6 +20,7 @@ module MotionModelResource
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
       def fetch(site, params = {}, &block)
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
+
         BW::HTTP.get(site, params) do |response|
           models = []
           if response.ok? && response.body.present?
@@ -45,10 +47,9 @@ module MotionModelResource
           return models
         else
           model = buildModel(json)
-          if model.present?
-            model.save
-            return model
-          end
+          model.save if model.present?
+
+          return model
         end
       end
 
@@ -59,7 +60,6 @@ module MotionModelResource
         model = where("id").eq(json["id"]).first
         if model.present?
           if model.wrap(json)
-            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
             return model
           end
         else
@@ -121,6 +121,10 @@ module MotionModelResource
       end
     end
 
+    def touchSync
+      self.lastSyncAt = Time.now if self.respond_to?(:lastSyncAt=)
+    end
+
     # Returns a hash with given model
     def buildHashFromModel(mainKey, model)
       hash = {
@@ -173,6 +177,8 @@ module MotionModelResource
     # Returns true, when no error exists
     def wrap(modelJson)
       return unless self.class.respond_to?(:wrapper)
+
+      touchSync
 
       self.class.wrapper[:fields].each do |online, local|
         if modelJson.respond_to?("key?") && modelJson.key?("#{online}")

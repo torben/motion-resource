@@ -38,23 +38,19 @@ module MotionModelResource
         if json.is_a?(Array)
           models = []
           for json_part in json
-            model = build_model(json_part)
-            if model.present?
-              model.save
-              models << model
-            end
+            model = save_model_with(json_part)
+            models << model if model.present?
           end
-          return models
+          models
         else
-          model = build_model(json)
-          model.save if model.present?
-
-          return model
+          save_model_with(json)
         end
       end
 
       # Builds a model for given JSON object. Returns a new or presend model.
-      def build_model(json)
+      def build_model_with(json)
+        return nil if json.is_a?(Array)
+
         classname = name.downcase
 
         model = where("id").eq(json["id"]).first
@@ -68,6 +64,15 @@ module MotionModelResource
         end
 
         nil
+      end
+
+      # Builds and update/create a model for given JSON object. Returns a new or presend model.
+      def save_model_with(json)
+        return nil if json.is_a?(Array)
+
+        model = build_model_with(json)
+        model.try :save
+        model
       end
     end
 
@@ -119,6 +124,7 @@ module MotionModelResource
       end
     end
 
+    # When called, the lastSyncAt Column will be set with Time.now (if present)
     def touch_sync
       self.lastSyncAt = Time.now if self.respond_to?(:lastSyncAt=)
     end
@@ -179,7 +185,7 @@ module MotionModelResource
 
       self.class.wrapper[:fields].each do |online, local|
         if model_json.respond_to?("key?") && model_json.key?("#{online}")
-          value = parse_value(local, model_json[online])
+          value = parse_value(local, model_json["#{online}"])
           self.send("#{local}=", value)
         end
       end

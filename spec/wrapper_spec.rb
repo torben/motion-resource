@@ -172,13 +172,110 @@ describe "Fetching a model" do
   end
 
   describe 'Class Methods' do
-    before do
-      3.times { User.create }
-      Task.create(id: 22)
-      Task.create(id: 33)
+    describe '#build_model_with' do
+      it 'should build a new Task object' do
+        json = {
+          "id" => 929,
+          "name" => 'Cleaning up the closet',
+          "user_id" => 10
+        }
+
+        t = Task.build_model_with(json)
+
+        t.name.should == "Cleaning up the closet"
+        t.user_id.should == 10
+        t.class == Task
+        t.new_record?.should == true
+
+        t.save
+      end
+
+      it 'should return and update an existing model' do
+        json = {
+          "id" => 929,
+          "name" => 'A new name',
+          "user_id" => 10
+        }
+
+        t = Task.build_model_with(json)
+
+        t.name.should == "A new name"
+        t.user_id.should == 10
+        t.class == Task
+        t.new_record?.should == false
+      end
+
+      it 'should retun nil, if array is given' do
+        json = [{
+          id: 923,
+          name: 'Cleaning up the closet',
+          user_id: 10
+        },
+        {
+          id: 924,
+          name: 'Cleaning up the closet2',
+          user_id: 11
+        }]
+
+        Task.build_model_with(json).should == nil
+      end
+    end
+
+    describe '#create_model_with' do
+      it 'should create a new Task object' do
+        json = {
+          "id" => 828,
+          "name" => 'An Amazing Name!',
+          "user_id" => 12
+        }
+
+        t = Task.save_model_with(json)
+
+        t.name.should == "An Amazing Name!"
+        t.user_id.should == 12
+        t.class == Task
+        t.new_record?.should == false
+      end
+
+      it 'should return and update an existing model' do
+        json = {
+          "id" => 828,
+          "name" => 'A newer name',
+          "user_id" => 12
+        }
+
+        t = Task.save_model_with(json)
+        t.new_record?.should == false
+
+        t2 = Task.find(828)
+        t2.name.should == "A newer name"
+        t2.user_id.should == 12
+        t2.class == Task
+      end
+
+      it 'should retun nil, if array is given' do
+        json = [{
+          id: 923,
+          name: 'Cleaning up the closet',
+          user_id: 10
+        },
+        {
+          id: 924,
+          name: 'Cleaning up the closet2',
+          user_id: 11
+        }]
+
+        Task.build_model_with(json).should == nil
+      end
     end
 
     describe '#update_models' do
+      before do
+        3.times { User.create }
+        Task.create(id: 22)
+        Task.create(id: 33)
+      end
+
       it 'should return nil, if model has no updated_at column' do
         User.last_update.should == nil
       end

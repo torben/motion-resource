@@ -178,26 +178,26 @@ describe "Fetching a model" do
       Task.create(id: 33)
     end
 
-    describe '#updateModels' do
+    describe '#update_models' do
       it 'should return nil, if model has no updated_at column' do
-        User.lastUpdate.should == nil
+        User.last_update.should == nil
       end
 
       it 'should return last updated_at, if model has updated_at column' do
-        Task.lastUpdate.to_s.should.equal Task.find(33).updated_at.to_s
+        Task.last_update.to_s.should.equal Task.find(33).updated_at.to_s
       end
     end
 
-    describe '#touchSync' do
+    describe '#touch_sync' do
       it 'should sets a timestap when calling' do
         u = User.new
-        u.touchSync
+        u.touch_sync
         u.lastSyncAt.class.should == Time
       end
 
       it 'should return nil if model has no lastSyncAt column' do
         t = Task.new
-        t.touchSync.should == nil
+        t.touch_sync.should == nil
       end
     end
   end

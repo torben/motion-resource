@@ -10,7 +10,7 @@ module MotionModelResource
 
     module PublicClassMethods
       # Returns the last updated at or nil value of Model
-      def lastUpdate
+      def last_update
         return unless columns.include? :updated_at
         order{|one, two| two.updated_at <=> one.updated_at}.first.try(:updated_at)
       end
@@ -25,7 +25,7 @@ module MotionModelResource
           models = []
           if response.ok? && response.body.present?
             json = BW::JSON.parse(response.body.to_str)
-            models = updateModels(json)
+            models = update_models(json)
           end
 
           block.call(models) if block.present? && block.respond_to?(:call)
@@ -34,11 +34,11 @@ module MotionModelResource
 
       # Parses given JSON object and saves the founded models.
       # Returns an array with models, or the founded model
-      def updateModels(json)
+      def update_models(json)
         if json.is_a?(Array)
           models = []
-          for jsonPart in json
-            model = buildModel(jsonPart)
+          for json_part in json
+            model = build_model(json_part)
             if model.present?
               model.save
               models << model
@@ -46,7 +46,7 @@ module MotionModelResource
           end
           return models
         else
-          model = buildModel(json)
+          model = build_model(json)
           model.save if model.present?
 
           return model
@@ -54,7 +54,7 @@ module MotionModelResource
       end
 
       # Builds a model for given JSON object. Returns a new or presend model.
-      def buildModel(json)
+      def build_model(json)
         classname = name.downcase
 
         model = where("id").eq(json["id"]).first
@@ -63,11 +63,11 @@ module MotionModelResource
             return model
           end
         else
-          newModel = self.new
-          return newModel if newModel.wrap(json)
+          new_model = self.new
+          return new_model if new_model.wrap(json)
         end
 
-        return nil
+        nil
       end
     end
 
@@ -93,18 +93,16 @@ module MotionModelResource
 
         model.id = nil if model.id.present? && action == "create"
 
-        hash = buildHashFromModel(self.class.name.downcase, self)
+        hash = build_hash_from_model(self.class.name.downcase, self)
         hash.merge!(options[:params]) if options[:params].present?
 
-        requestBlock = Proc.new do |response|
+        request_block = Proc.new do |response|
+          model = nil
           if response.ok? && response.body.present?
             json = BW::JSON.parse(response.body.to_str)
 
             model.wrap(json)
-            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
             model.save
-          else
-            model = nil
           end
 
           block.call(model) if block.present? && block.respond_to?(:call)
@@ -112,40 +110,40 @@ module MotionModelResource
 
         case action
         when "create"
-          BW::HTTP.post(self.class.url, {payload: hash}, &requestBlock)
+          BW::HTTP.post(self.class.url, {payload: hash}, &request_block)
         when "update"
-          BW::HTTP.put("#{self.class.url}/#{model.id}", {payload: hash}, &requestBlock)
+          BW::HTTP.put("#{self.class.url}/#{model.id}", {payload: hash}, &request_block)
         end
       else
         super
       end
     end
 
-    def touchSync
+    def touch_sync
       self.lastSyncAt = Time.now if self.respond_to?(:lastSyncAt=)
     end
 
     # Returns a hash with given model
-    def buildHashFromModel(mainKey, model)
+    def build_hash_from_model(main_key, model)
       hash = {
-        mainKey => {}
+        main_key => {}
       }
-      hash[mainKey] = {}
+      hash[main_key] = {}
 
       model.attributes.each do |key, attribute|
         if model.class.has_many_columns.keys.include?(key)
-          newKey = attribute.first.class.name.pluralize.downcase
-          hash[mainKey][newKey] = []
+          new_key = attribute.first.class.name.pluralize.downcase
+          hash[main_key][new_key] = []
           for a in attribute
-            hash[mainKey][newKey].push(buildHashFromModel(newKey, a)[newKey])
+            hash[main_key][new_key].push(build_hash_from_model(new_key, a)[new_key])
           end
         elsif attribute.respond_to?(:attributes)
-          newKey = attribute.class.name.downcase
-          h = buildHashFromModel(newKey, attribute)
-          hash[mainKey][newKey] = h[newKey] if h.has_key?(newKey)
+          new_key = attribute.class.name.downcase
+          h = build_hash_from_model(new_key, attribute)
+          hash[main_key][new_key] = h[new_key] if h.has_key?(new_key)
         else
-          model.class.wrapper[:fields].each do |wrapperKey, wrapperValue|
-            hash[mainKey][wrapperKey] = attribute if wrapperValue == key
+          model.class.wrapper[:fields].each do |wrapper_key, wrapper_value|
+            hash[main_key][wrapper_key] = attribute if wrapper_value == key
           end
         end
       end
@@ -163,7 +161,6 @@ module MotionModelResource
         if response.ok? && response.body.present?
           json = BW::JSON.parse(response.body.to_str)
           model.wrap(json)
-          model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
 
           model.save
         end
@@ -175,24 +172,24 @@ module MotionModelResource
     # Wraps the current model with the given JSON.
     # All the fields found in JSON and self.wrapper will be parsed.
     # Returns true, when no error exists
-    def wrap(modelJson)
+    def wrap(model_json)
       return unless self.class.respond_to?(:wrapper)
 
-      touchSync
+      touch_sync
 
       self.class.wrapper[:fields].each do |online, local|
-        if modelJson.respond_to?("key?") && modelJson.key?("#{online}")
-          value = parseValue(local, modelJson[online])
+        if model_json.respond_to?("key?") && model_json.key?("#{online}")
+          value = parse_value(local, model_json[online])
           self.send("#{local}=", value)
         end
       end
 
       if self.class.wrapper[:relations].present?
         self.class.wrapper[:relations].each do |relation|
-          if modelJson.respond_to?("key?") && modelJson.key?("#{relation}") && modelJson["#{relation}"].present?
+          if model_json.respond_to?("key?") && model_json.key?("#{relation}") && model_json["#{relation}"].present?
             klass = Object.const_get(relation.to_s.singularize.camelize)
-            newRelation = klass.updateModels(modelJson["#{relation}"])
-            self.send("#{relation}=", newRelation) rescue NoMethodError # not correct implemented in MotionModel
+            new_relation = klass.update_models(model_json["#{relation}"])
+            self.send("#{relation}=", new_relation) rescue NoMethodError # not correct implemented in MotionModel
           end
         end
       end
@@ -202,9 +199,9 @@ module MotionModelResource
 
     # Parses given value for key in the right format for MotionModel.
     # Currently only Date/Time support needed
-    def parseValue(key, value)
+    def parse_value(key, value)
       case self.column_type(key.to_sym)
-      when :date, :time then MotionModelResource::DateParser.parseDate value
+      when :date, :time then MotionModelResource::DateParser.parse_date value
       else value
       end
     end

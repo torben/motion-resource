@@ -51,19 +51,8 @@ module MotionModelResource
       def build_model_with(json)
         return nil if json.is_a?(Array)
 
-        classname = name.downcase
-
-        model = where("id").eq(json["id"]).first
-        if model.present?
-          if model.wrap(json)
-            return model
-          end
-        else
-          new_model = self.new
-          return new_model if new_model.wrap(json)
-        end
-
-        nil
+        model = where("id").eq(json["id"]).first || self.new        
+        model.wrap(json)
       end
 
       # Builds and update/create a model for given JSON object. Returns a new or presend model.
@@ -84,41 +73,7 @@ module MotionModelResource
     # If the record is a new one, a POST request will be fired, otherwise a PUT call comes to the server.
     def save(options = {}, &block)
       if block.present?
-        raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
-
-        action = if new_record?
-          "create"
-        elsif self.id.present?
-          "update"
-        else
-          raise MotionModelResource::ActionNotImplemented.new "Action ist not implemented for #{self.class.name}!"
-        end
-
-        model = self
-
-        model.id = nil if model.id.present? && action == "create"
-
-        hash = build_hash_from_model(self.class.name.downcase, self)
-        hash.merge!(options[:params]) if options[:params].present?
-
-        request_block = Proc.new do |response|
-          model = nil
-          if response.ok? && response.body.present?
-            json = BW::JSON.parse(response.body.to_str)
-
-            model.wrap(json)
-            model.save
-          end
-
-          block.call(model) if block.present? && block.respond_to?(:call)
-        end
-
-        case action
-        when "create"
-          BW::HTTP.post(self.class.url, {payload: hash}, &request_block)
-        when "update"
-          BW::HTTP.put("#{self.class.url}/#{model.id}", {payload: hash}, &request_block)
-        end
+        save_remote(options, &block)
       else
         super
       end
@@ -200,7 +155,7 @@ module MotionModelResource
         end
       end
 
-      true
+      self
     end
 
     # Parses given value for key in the right format for MotionModel.
@@ -209,6 +164,59 @@ module MotionModelResource
       case self.column_type(key.to_sym)
       when :date, :time then MotionModelResource::DateParser.parse_date value
       else value
+      end
+    end
+
+    private
+
+    def save_remote(options, &block)
+      raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
+
+      self.id = nil if self.id.present? && save_action == :create
+
+      params = build_hash_from_model(self.class.name.downcase, self)
+      params.merge!(options[:params]) if options[:params].present?
+
+      save_remote_call(params) do |response|
+        model = nil
+        if response.ok? && response.body.present?
+          json = BW::JSON.parse(response.body.to_str)
+
+          model = self.class.save_model_with(json)
+        end
+
+        block.call(model) if block.present? && block.respond_to?(:call)
+      end
+    end
+
+    # Returns the action for save
+    def save_action
+      if new_record?
+        :create
+      elsif self.id.present?
+        :update
+      else
+        raise MotionModelResource::ActionNotImplemented.new "Action ist not implemented for #{self.class.name}!"
+      end
+    end
+
+    # Returns the URL for the resource
+    def save_url
+      raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
+
+      case save_action
+      when :create then self.class.url
+      when :update then "#{self.class.url}/#{self.id}"
+      end
+    end
+
+    # Calls a request to the remote server with the given params.
+    def save_remote_call(params, &request_block)
+      case save_action
+      when :create
+        BW::HTTP.post(save_url, {payload: params}, &request_block)
+      when :update
+        BW::HTTP.put(save_url, {payload: params}, &request_block)
       end
     end
   end

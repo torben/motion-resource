@@ -90,6 +90,24 @@ class Plan
   has_many :users
 end
 
+class PlanWithoutUrl
+  include MotionModel::Model
+  include MotionModel::ArrayModelAdapter
+  include MotionModelResource::ApiWrapper
+
+  def self.wrapper
+    @wrapper ||= {
+      fields: {
+        id:       :id,
+        name:     :name,
+      },
+      relations: [:users]
+    }
+  end
+
+  columns name: :string
+end
+
 describe "Fetching a model" do
   extend WebStub::SpecHelpers
 
@@ -295,6 +313,101 @@ describe "Fetching a model" do
       it 'should return nil if model has no lastSyncAt column' do
         t = Task.new
         t.touch_sync.should == nil
+      end
+    end
+  end
+
+  describe 'Instance Methods' do
+    describe '#save' do
+      it 'should return nil, if the remote server returns empty json' do
+        stub_request(:post, Task.url).to_return(json: {})
+        t = Task.new
+        t.name = "This is Sparta!"
+
+        new_model = nil
+        t.save do |model|
+          resume
+          new_model = model
+        end
+
+        wait_max 1.0 do
+          new_model.should == nil
+        end
+      end
+
+      it 'should save a model and call the remote server' do
+        stub_request(:post, Task.url).to_return(json: {name: 'This is Sparta!'})
+        t = Task.new
+        t.name = "This is Sparta!"
+
+        @new_model = nil
+        t.save do |model|
+          @new_model = model
+          resume
+        end
+
+        wait_max 1.0 do
+          @new_model.should.not == nil
+          @new_model.new_record?.should == false
+          @new_model.name.should == "This is Sparta!"
+        end
+      end
+
+      it 'should update a model and call the remote server' do
+        t = Task.last
+        t.name = "This was Sparta :("
+        stub_request(:put, "#{Task.url}/#{t.id}").to_return(json: {name: 'This was Sparta :('})
+
+        @update_model = nil
+        t.save do |model|
+          @update_model = model
+          resume
+        end
+
+        wait_max 1.0 do
+          @update_model.should.not == nil
+          @update_model.new_record?.should == false
+          @update_model.name.should == "This was Sparta :("
+        end
+      end
+    end
+
+    describe '#save_action' do
+      it 'should return :create, when having a new record' do
+        t = Task.new
+        t.send(:save_action).should == :create
+      end
+
+      it 'should return :update, when having a new record' do
+        t = Task.last
+        t.send(:save_action).should == :update
+      end
+
+      it 'should raise an exception, when having a new record with an id' do
+        t = Task.last
+        t.id = nil
+        lambda {
+          t.send(:save_action)
+        }.should.raise(MotionModelResource::ActionNotImplemented)
+      end
+    end
+
+    describe '#save_url' do
+      it 'should raise an exception, when url property is missing' do
+        p = PlanWithoutUrl.new
+        lambda {
+          p.send(:save_url)
+        }.should.raise(MotionModelResource::URLNotDefinedError)
+      end
+
+      it 'should return the right create url' do
+        t = Task.new
+        t.send(:save_url).should == Task.url
+      end
+
+      it 'should return the right update url' do
+        t = Task.first
+        t.send(:save_url).should == "#{Task.url}/#{t.id}"
       end
     end
   end

@@ -50,7 +50,7 @@ module MotionModelResource
 
       # Return the API
       def api_url
-        @api_url = "#{Api_url}/#{self.to_s.pluralize}"
+        @api_url = "#{Api_url}/#{self.to_s.pluralize.downcase}"
       end
 
       # Loads the given URL and parse the JSON for new models.
@@ -61,7 +61,6 @@ module MotionModelResource
 
         # Make sure we've got an API url
         site = self.api_url() if site.empty?
-        p site
 
         # Make the BW request to the external resource
         BW::HTTP.get(site, params) do |response|

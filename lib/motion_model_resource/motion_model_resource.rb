@@ -1,8 +1,42 @@
+# Copyright (c) 2013 Torben Toepper
+
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+# LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+# WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 module MotionModelResource
   class WrapperNotDefinedError < Exception; end
   class URLNotDefinedError < Exception; end
   class ActionNotImplemented < Exception; end
 
+  # The DateParser
+  module DateParser
+    def self.parseDate(arg)
+      date_formatter = NSDateFormatter.alloc.init
+      date_formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZ"
+      date = date_formatter.dateFromString arg
+
+      return nil if date.blank?
+
+      date.description
+    end
+  end
+
+  # The ApiWrapper
   module ApiWrapper
     def self.included(base)
       base.extend(PublicClassMethods)
@@ -14,11 +48,21 @@ module MotionModelResource
         order(:updated_at).first.try(:updated_at)
       end
 
+      # Return the API
+      def api_url
+        @api_url = "#{Api_url}/#{self.to_s.pluralize.downcase}"
+      end
+
       # Loads the given URL and parse the JSON for new models.
       # If the models are present, the model will update.
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
-      def fetch(site, params = {}, &block)
+      def fetch(site = {}, params = {}, &block)
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
+
+        # Make sure we've got an API url
+        site = self.api_url() if site.empty?
+
+        # Make the BW request to the external resource
         BW::HTTP.get(site, params) do |response|
           models = []
           if response.ok? && response.body.present?
@@ -79,7 +123,7 @@ module MotionModelResource
     # If the record is a new one, a POST request will be fired, otherwise a PUT call comes to the server.
     def save(options = {}, &block)
       if block.present?
-        raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
+        raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless Api_url
 
         action = if new_record?
           "create"
@@ -90,7 +134,6 @@ module MotionModelResource
         end
 
         model = self
-
         model.id = nil if model.id.present? && action == "create"
 
         hash = buildHashFromModel(self.class.name.downcase, self)
@@ -112,9 +155,9 @@ module MotionModelResource
 
         case action
         when "create"
-          BW::HTTP.post(self.class.url, {payload: hash}, &requestBlock)
+          BW::HTTP.post(@api_url, {payload: hash}, &requestBlock)
         when "update"
-          BW::HTTP.put("#{self.class.url}/#{model.id}", {payload: hash}, &requestBlock)
+          BW::HTTP.put("#{@api_url}/#{model.id}", {payload: hash}, &requestBlock)
         end
       else
         super
@@ -160,7 +203,6 @@ module MotionModelResource
           json = BW::JSON.parse(response.body.to_str)
           model.wrap(json)
           model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
-
           model.save
         end
 

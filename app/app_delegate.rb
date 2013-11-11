@@ -1,2 +1,0 @@
-class FakeDelegate
-end

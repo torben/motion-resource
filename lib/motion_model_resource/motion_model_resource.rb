@@ -61,6 +61,7 @@ module MotionModelResource
 
         # Make sure we've got an API url
         self.api_url() if site.empty?
+        p @api_url
 
         # Make the BW request to the external resource
         BW::HTTP.get(site, params) do |response|

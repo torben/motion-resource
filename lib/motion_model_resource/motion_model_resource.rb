@@ -40,6 +40,9 @@ module MotionModelResource
   module ApiWrapper
     def self.included(base)
       base.extend(PublicClassMethods)
+
+      # Make sure we've got an API url
+      self.api_url()
     end
 
     module PublicClassMethods
@@ -50,20 +53,16 @@ module MotionModelResource
 
       # Return the API
       def api_url
-        "#{Api_url}/#{self.to_s.pluralize}"
+        @api_url = "#{Api_url}/#{self.to_s.pluralize}"
       end
 
       # Loads the given URL and parse the JSON for new models.
       # If the models are present, the model will update.
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
-      def fetch(site = "", params = {}, &block)
+      def fetch(site = @api_url, params = {}, &block)
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
 
-        # Check or we've got an api url
-        if !site
-          @api_url = self.api_url()
-          p @api_url
-        end
+        p @api_url
 
         # Make the BW request
         BW::HTTP.get(site, params) do |response|

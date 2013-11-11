@@ -60,8 +60,8 @@ module MotionModelResource
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
 
         # Make sure we've got an API url
-        self.api_url() if site.empty?
-        p @api_url
+        site = self.api_url() if site.empty?
+        p site
 
         # Make the BW request to the external resource
         BW::HTTP.get(site, params) do |response|

@@ -51,13 +51,8 @@ module MotionModelResource
       # Loads the given URL and parse the JSON for new models.
       # If the models are present, the model will update.
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
-      def fetch(site, params = {}, &block)
+      def fetch(site = "#{Api_url}/#{self.class.name.pluralize}", params = {}, &block)
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
-
-        # Check or we need to load data from an other source
-        if !site
-          site = "#{Api_url}/#{self.class.name.pluralize}"
-        end
 
         # Make the BW request
         BW::HTTP.get(site, params) do |response|

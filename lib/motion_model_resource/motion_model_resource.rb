@@ -54,6 +54,8 @@ module MotionModelResource
       def fetch(site = "#{Api_url}/#{self.class.name.pluralize}", params = {}, &block)
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
 
+        p self.class.name
+
         # Make the BW request
         BW::HTTP.get(site, params) do |response|
           models = []

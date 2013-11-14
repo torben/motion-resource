@@ -17,4 +17,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'motion_model', '>=0.4.4'
   gem.add_dependency 'webstub', '>=0.3.0'
   gem.version       = MotionModelResource::VERSION
+  gem.licenses      = ["MIT"]
 end

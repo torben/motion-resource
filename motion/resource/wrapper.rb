@@ -54,7 +54,7 @@ module MotionModelResource
 
       # Builds a model for given JSON object. Returns a new or presend model.
       def buildModel(json)
-        classname = name.downcase
+        classname = name.underscore
 
         model = where("id").eq(json["id"]).first
         if model.present?
@@ -93,7 +93,7 @@ module MotionModelResource
 
         model.id = nil if model.id.present? && action == "create"
 
-        hash = buildHashFromModel(self.class.name.downcase, self)
+        hash = buildHashFromModel(self.class.name.underscore, self)
         hash.merge!(options[:params]) if options[:params].present?
 
         requestBlock = Proc.new do |response|
@@ -137,7 +137,7 @@ module MotionModelResource
             hash[mainKey][newKey].push(buildHashFromModel(newKey, a)[newKey])
           end
         elsif attribute.respond_to?(:attributes)
-          newKey = attribute.class.name.downcase
+          newKey = attribute.class.name.underscore
           h = buildHashFromModel(newKey, attribute)
           hash[mainKey][newKey] = h[newKey] if h.has_key?(newKey)
         else

@@ -120,6 +120,7 @@ module MotionModelResource
         super
       end
     end
+    alias_method :save_remote, :save
 
     # Returns a hash with given model
     def buildHashFromModel(mainKey, model)

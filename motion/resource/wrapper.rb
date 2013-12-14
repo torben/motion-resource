@@ -122,6 +122,36 @@ module MotionModelResource
     end
     alias_method :save_remote, :save
 
+    # Destroys a remote model
+    # UNTESTED # TODO write a test
+    def destroy(options = {}, &block)
+      if block.present?
+        raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
+        
+        model = self
+
+        BW::HTTP.delete("#{self.try(:url)}" || "#{self.class.url}/#{model.id}", {payload: options[:params]}) do |response|
+          if response.ok? || options[:force] == true
+            model.delete
+          end
+
+          block.call if block.present? && block.respond_to?(:call)
+        end
+      else
+        super
+      end
+    end
+    alias_method :destroy_remote, :destroy
+    
+    # Takes no care of the server response.
+    # UNTESTED # TODO write a test
+    def destroy!(options = {}, &block)
+      options.merge!(force: true)
+
+      destroy(options, &block)
+    end
+    alias_method :destroy_remote!, :destroy!
+
     # Returns a hash with given model
     def buildHashFromModel(mainKey, model)
       hash = {
@@ -153,7 +183,7 @@ module MotionModelResource
     # Loads the given URL and parse the JSON for a model.
     # If the model is present, the model will updates.
     # If block given, the block will called, when the the model is saved. The model will be passed as an argument to the block.
-    def fetch(site, params, &block)
+    def fetch(site, params = {}, &block)
       raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.class.respond_to?(:wrapper)
       model = self
       BW::HTTP.get(site, params) do |response|

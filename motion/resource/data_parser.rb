@@ -1,8 +1,9 @@
 module MotionModelResource
   module DateParser
     def self.parseDate(arg)
+      additional_parsestring = arg.include?(".") ? ".SSS" : ""
       date_formatter = NSDateFormatter.alloc.init
-      date_formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZZZZ"
+      date_formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss#{additional_parsestring}ZZZZ"
       date = date_formatter.dateFromString arg
 
       return nil if date.blank?

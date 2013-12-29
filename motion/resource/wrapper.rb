@@ -114,14 +114,14 @@ module MotionModelResource
         when "create"
           BW::HTTP.post(self.try(:url) || self.class.url, {payload: hash}, &requestBlock)
         when "update"
-          BW::HTTP.put(self.try(:url) || "#{self.class.url}/#{model.id}", {payload: hash}, &requestBlock)
+          BW::HTTP.put("#{self.try(:url)}" || "#{self.class.url}/#{model.id}", {payload: hash}, &requestBlock)
         end
       else
         super
       end
     end
     alias_method :save_remote, :save
-
+    
     # Destroys a remote model
     # UNTESTED # TODO write a test
     def destroy(options = {}, &block)
@@ -229,7 +229,7 @@ module MotionModelResource
     # Currently only Date/Time support needed
     def parseValue(key, value)
       case self.column_type(key.to_sym)
-      when :date, :time then MotionModelResource::DateParser.parseDate value
+      when :time then MotionModelResource::DateParser.parseDate value
       else value
       end
     end

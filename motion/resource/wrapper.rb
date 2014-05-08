@@ -176,7 +176,7 @@ module MotionModelResource
           end
         elsif attribute.respond_to?(:attributes)
           newKey = attribute.class.name.underscore
-          h = buildHashFromModel(newKey, attribute)
+          h = attribute.buildHashFromModel(newKey, attribute)
           hash[mainKey][newKey] = h[newKey] if h.has_key?(newKey)
         else
           model.class.wrapper[:fields].each do |wrapperKey, wrapperValue|

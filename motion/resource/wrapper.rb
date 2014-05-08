@@ -28,8 +28,11 @@ module MotionModelResource
         BW::HTTP.get(site, params) do |response|
           models = []
           if response.ok? && response.body.present?
-            json = BW::JSON.parse(response.body.to_str)
-            models = updateModels(json)
+            begin
+              json = BW::JSON.parse(response.body.try(:to_str))
+              models = updateModels(json)
+            rescue BW::JSON::ParserError
+            end
           end
 
           block.call(models) if block.present? && block.respond_to?(:call)
@@ -105,17 +108,21 @@ module MotionModelResource
         hash.merge!(options[:params]) if options[:params].present?
 
         requestBlock = Proc.new do |response|
-          if response.ok? && response.body.present?
-            json = BW::JSON.parse(response.body.to_str)
+          begin
+            json = BW::JSON.parse(response.body.try(:to_str))
 
-            model.wrap(json)
-            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
-            model.save
-          else
+            if response.ok?
+              model.wrap(json)
+              model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
+              model.save
+            else
+              model = nil
+            end
+          rescue BW::JSON::ParserError
             model = nil
           end
 
-          block.call(model) if block.present? && block.respond_to?(:call)
+          block.call(model, json) if block.present? && block.respond_to?(:call)
         end
 
         case action
@@ -200,14 +207,20 @@ module MotionModelResource
       model = self
       BW::HTTP.get(site, params) do |response|
         if response.ok? && response.body.present?
-          json = BW::JSON.parse(response.body.to_str)
-          model.wrap(json)
-          model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
+          begin
+            json = BW::JSON.parse(response.body.try(:to_str))
+            model.wrap(json)
+            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
 
-          model.save
+            model.save
+          rescue BW::JSON::ParserError
+            model = nil
+          end
+        else
+          model = nil
         end
 
-        block.call if block.present? && block.respond_to?(:call)
+        block.call model if block.present? && block.respond_to?(:call)
       end
     end
 

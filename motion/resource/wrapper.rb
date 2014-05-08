@@ -2,10 +2,12 @@ module MotionModelResource
   class WrapperNotDefinedError < Exception; end
   class URLNotDefinedError < Exception; end
   class ActionNotImplemented < Exception; end
+  class FieldInJSONIsMissing < Exception; end
 
   module ApiWrapper
     def self.included(base)
       base.extend(PublicClassMethods)
+      base.extend(MotionModelResource::DateParser)
     end
 
     module PublicClassMethods
@@ -17,8 +19,12 @@ module MotionModelResource
       # Loads the given URL and parse the JSON for new models.
       # If the models are present, the model will update.
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
-      def fetch(site, params = {}, &block)
+      def fetch(site = nil, params = {}, &block)
         raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.respond_to?(:wrapper)
+        raise MotionModelResource::URLNotDefinedError.new "Resource URL ist not defined! (#{name}.url)" if site.blank? && self.try(:url).blank?
+
+        site = self.url if site.blank?
+
         BW::HTTP.get(site, params) do |response|
           models = []
           if response.ok? && response.body.present?
@@ -34,20 +40,21 @@ module MotionModelResource
       # Returns an array with models, or the founded model
       def updateModels(json)
         if json.is_a?(Array)
-          models = []
-          for jsonPart in json
+          model_ids = []
+          json.each do |jsonPart|
             model = buildModel(jsonPart)
             if model.present?
               model.save
-              models << model
+              model_ids << "#{model.id}".to_i
+              model = nil
             end
           end
-          return models
+          return where(:id).in(model_ids)
         else
           model = buildModel(json)
           if model.present?
             model.save
-            return model
+            return find("#{model.id}".to_i)
           end
         end
       end
@@ -59,11 +66,12 @@ module MotionModelResource
         model = where("id").eq(json["id"]).first
         if model.present?
           if model.wrap(json)
-            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
+            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
             return model
           end
         else
           newModel = self.new
+          newModel.lastSyncAt = Time.now if newModel.respond_to?(:lastSyncAt=)
           return newModel if newModel.wrap(json)
         end
 
@@ -101,7 +109,7 @@ module MotionModelResource
             json = BW::JSON.parse(response.body.to_str)
 
             model.wrap(json)
-            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
+            model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
             model.save
           else
             model = nil
@@ -114,7 +122,7 @@ module MotionModelResource
         when "create"
           BW::HTTP.post(self.try(:url) || self.class.url, {payload: hash}, &requestBlock)
         when "update"
-          BW::HTTP.put("#{self.try(:url)}" || "#{self.class.url}/#{model.id}", {payload: hash}, &requestBlock)
+          BW::HTTP.put(self.try(:url) || "#{self.class.url}/#{model.id}", {payload: hash}, &requestBlock)
         end
       else
         super
@@ -130,7 +138,7 @@ module MotionModelResource
         
         model = self
 
-        BW::HTTP.delete("#{self.try(:url)}" || "#{self.class.url}/#{model.id}", {payload: options[:params]}) do |response|
+        BW::HTTP.delete(self.try(:url) || "#{self.class.url}/#{model.id}", {payload: options[:params]}) do |response|
           if response.ok? || options[:force] == true
             model.delete
           end
@@ -183,14 +191,18 @@ module MotionModelResource
     # Loads the given URL and parse the JSON for a model.
     # If the model is present, the model will updates.
     # If block given, the block will called, when the the model is saved. The model will be passed as an argument to the block.
-    def fetch(site, params = {}, &block)
+    def fetch(site = nil, params = {}, &block)
+      raise MotionModelResource::URLNotDefinedError.new "Resource URL ist not defined! (#{self.class.name}.url)" if site.blank? && self.class.try(:url).blank?
       raise MotionModelResource::WrapperNotDefinedError.new "Wrapper is not defined!" unless self.class.respond_to?(:wrapper)
+
+      site = "#{self.class.url}/#{id}" if site.blank?
+
       model = self
       BW::HTTP.get(site, params) do |response|
         if response.ok? && response.body.present?
           json = BW::JSON.parse(response.body.to_str)
           model.wrap(json)
-          model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt)
+          model.lastSyncAt = Time.now if model.respond_to?(:lastSyncAt=)
 
           model.save
         end
@@ -228,8 +240,14 @@ module MotionModelResource
     # Parses given value for key in the right format for MotionModel.
     # Currently only Date/Time support needed
     def parseValue(key, value)
-      case self.column_type(key.to_sym)
-      when :time then MotionModelResource::DateParser.parseDate value
+      begin
+        column_type = self.column_type(key.to_sym)
+      rescue
+        raise FieldInJSONIsMissing.new("Field '#{row}' is missing in your #{self.class.name} model")
+      end
+
+      case column_type
+      when :time then self.class.parseDate value
       else value
       end
     end

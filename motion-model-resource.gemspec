@@ -3,7 +3,7 @@ require File.expand_path('../lib/motion-model-resource/version', __FILE__)
 
 Gem::Specification.new do |gem|
   gem.authors       = ["Torben Toepper"]
-  gem.email         = ["lshadyl@googlemail.com"]
+  gem.email         = ["message@torbentoepper.de"]
   gem.description   = "Simple JSON API Wrapper for MotionModel on RubyMotion"
   gem.summary       = "Simple JSON API Wrapper for MotionModel on RubyMotion"
   gem.homepage      = "https://github.com/torben/motion-resource"

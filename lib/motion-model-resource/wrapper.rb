@@ -164,14 +164,14 @@ module MotionModelResource
 
       model.attributes.each do |key, attribute|
         if model.class.has_many_columns.keys.include?(key)
-          new_key = attribute.first.class.name.pluralize.downcase
+          new_key = attribute.first.class.name.pluralize.underscore
           hash[main_key][new_key] = []
           for a in attribute
             hash[main_key][new_key].push(build_hash_from_model(new_key, a)[new_key])
           end
         elsif attribute.respond_to?(:attributes)
-          new_key = attribute.class.name.downcase
-          h = build_hash_from_model(new_key, attribute)
+          new_key = attribute.class.name.underscore
+          h = attribute.build_hash_from_model(new_key, attribute)
           hash[main_key][new_key] = h[new_key] if h.has_key?(new_key)
         else
           model.class.wrapper[:fields].each do |wrapper_key, wrapper_value|
@@ -180,7 +180,7 @@ module MotionModelResource
         end
       end
 
-      return hash
+      hash
     end
 
     # Loads the given URL and parse the JSON for a model.
@@ -229,7 +229,10 @@ module MotionModelResource
       if self.class.wrapper[:relations].present?
         self.class.wrapper[:relations].each do |relation|
           if model_json.respond_to?("key?") && model_json.key?("#{relation}") && model_json["#{relation}"].present?
-            klass = Object.const_get(relation.to_s.singularize.camelize)
+            klass_name = column(relation.to_s).instance_variable_get("@options").try(:[], :joined_class_name) || relation.to_s.singularize.camelize
+
+            klass = Object.const_get(klass_name)
+
             new_relation = klass.update_models(model_json["#{relation}"])
             self.send("#{relation}=", new_relation) rescue NoMethodError # not correct implemented in MotionModel
           end
@@ -268,8 +271,8 @@ module MotionModelResource
       raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
 
       case save_action
-      when :create then self.class.url
-      when :update then "#{self.class.url}/#{self.id}"
+      when :create then self.try(:url) || self.class.url
+      when :update then self.try(:url) || "#{self.class.url}/#{id}"
       end
     end
 

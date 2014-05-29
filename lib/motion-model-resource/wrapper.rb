@@ -122,6 +122,39 @@ module MotionModelResource
       end
     end
 
+    def destroy(options = {}, &block)
+      if block.present?
+        destroy_remote(options, &block)
+      else
+        super
+      end
+    end
+    
+    # Destroys a remote model
+    # UNTESTED # TODO write a test
+    def destroy_remote(options = {}, &block)
+      raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
+      
+      model = self
+
+      BW::HTTP.delete(save_url, {payload: options[:params]}) do |response|
+        if response.ok? || options[:force] == true
+          model.delete
+        end
+
+        block.call if block.present? && block.respond_to?(:call)
+      end
+    end
+    
+    # Takes no care of the server response.
+    # UNTESTED # TODO write a test
+    def destroy!(options = {}, &block)
+      options.merge!(force: true)
+
+      destroy_remote(options, &block)
+    end
+    alias_method :destroy_remote!, :destroy!
+
     # Returns a hash with given model
     def build_hash_from_model(main_key, model)
       hash = {

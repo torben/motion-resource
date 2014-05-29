@@ -1,11 +1,11 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../motion/version', __FILE__)
+require File.expand_path('../lib/motion-model-resource/version', __FILE__)
 
 Gem::Specification.new do |gem|
   gem.authors       = ["Torben Toepper"]
-  gem.email         = ["lshadyl@googlemail.com"]
-  gem.description   = "Simple JSON API Wrapper for MotionModel on RubyMotion"
-  gem.summary       = "Simple JSON API Wrapper for MotionModel on RubyMotion"
+  gem.email         = ["message@torbentoepper.de"]
+  gem.description   = "Simple REST JSON API Wrapper for MotionModel on RubyMotion"
+  gem.summary       = "Simple REST JSON API Wrapper for MotionModel on RubyMotion"
   gem.homepage      = "https://github.com/torben/motion-resource"
 
   gem.files         = `git ls-files`.split($\)

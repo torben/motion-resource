@@ -240,7 +240,10 @@ module MotionModelResource
       if self.class.wrapper[:relations].present?
         self.class.wrapper[:relations].each do |relation|
           if modelJson.respond_to?("key?") && modelJson.key?("#{relation}") && modelJson["#{relation}"].present?
-            klass = Object.const_get(relation.to_s.singularize.camelize)
+            klass_name = column(relation.to_s).instance_variable_get("@options").try(:[], :joined_class_name) || relation.to_s.singularize.camelize
+
+            klass = Object.const_get(klass_name)
+
             newRelation = klass.updateModels(modelJson["#{relation}"])
             self.send("#{relation}=", newRelation) rescue NoMethodError # not correct implemented in MotionModel
           end

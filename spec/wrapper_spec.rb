@@ -63,6 +63,7 @@ class Task
   end
 
   columns name:       :string,
+          due_date:   :time,
           updated_at: :date
   belongs_to :user
 end
@@ -318,6 +319,18 @@ describe "Fetching a model" do
   end
 
   describe 'Instance Methods' do
+    describe '#parse_value' do
+      it 'should parse a date string to a time string' do
+        t = Task.new
+        t.parse_value(:due_date, "2014-05-29T10:59:39+02:00").should == "2014-05-29 08:59:39 +0000"
+      end
+
+      it 'should return nil if the input date is invalid' do
+        t = Task.new
+        t.parse_value(:due_date, "2014-05-29 10:59:39").should == nil
+      end
+    end
+
     describe '#save' do
       it 'should return nil, if the remote server returns empty json' do
         stub_request(:post, Task.url).to_return(json: {})

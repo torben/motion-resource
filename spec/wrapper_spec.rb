@@ -349,7 +349,7 @@ describe "Fetching a model" do
       end
 
       it 'should save a model and call the remote server' do
-        stub_request(:post, Task.url).to_return(json: {name: 'This is Sparta!'})
+        stub_request(:post, Task.url).to_return(json: {id: 88, name: 'This is Sparta!'})
         t = Task.new
         t.name = "This is Sparta!"
 

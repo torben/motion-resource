@@ -15,6 +15,11 @@ module MotionModelResource
         order{|one, two| two.updated_at <=> one.updated_at}.first.try(:updated_at)
       end
 
+      def lastUpdate
+        NSLog "[DEPRECATED - lastUpdate] please use last_update instead."
+        last_update
+      end
+
       # Loads the given URL and parse the JSON for new models.
       # If the models are present, the model will update.
       # If block given, the block will called, when the the models are saved. The model/s will be passed as an argument to the block.
@@ -56,12 +61,22 @@ module MotionModelResource
         end
       end
 
+      def updateModels(json)
+        NSLog "[DEPRECATED - updateModels] please use update_models instead."
+        update_models json
+      end
+
       # Builds a model for given JSON object. Returns a new or presend model.
       def build_model_with(json)
         return nil if json.is_a?(Array)
 
         model = where("id").eq(json["id"]).first || self.new        
         model.wrap(json)
+      end
+
+      def buildModel(json)
+        NSLog "[DEPRECATED - buildModel] please use build_model_with instead."
+        build_model_with json
       end
 
       # Builds and update/create a model for given JSON object. Returns a new or presend model.
@@ -183,6 +198,11 @@ module MotionModelResource
       hash
     end
 
+    def buildHashFromModel(mainKey, model)
+      NSLog "[DEPRECATED - buildHashFromModel] please use build_hash_from_model instead."
+      build_hash_from_model mainKey, model
+    end
+
     # Loads the given URL and parse the JSON for a model.
     # If the model is present, the model will updates.
     # If block given, the block will called, when the the model is saved. The model will be passed as an argument to the block.
@@ -251,6 +271,9 @@ module MotionModelResource
       end
     end
 
+    def parseValue(key, value)
+      NSLog "[DEPRECATED - parseValue] please use parse_value instead."
+      parse_value
     end
 
     private

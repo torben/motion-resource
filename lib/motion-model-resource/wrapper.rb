@@ -76,6 +76,11 @@ module MotionModelResource
 
     # Instance methods
 
+    # When called, the lastSyncAt Column will be set with Time.now (if present)
+    def touch_sync
+      self.lastSyncAt = Time.now if self.respond_to?(:lastSyncAt=)
+    end
+
     # Saves the current model. Calls super when block is not given.
     # If block is given, the url method will be needed to call the remote server.
     # The answer of the server will be parsed and stored.
@@ -87,10 +92,34 @@ module MotionModelResource
         super
       end
     end
+    
+    def save_remote(options, &block)
+      raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
 
-    # When called, the lastSyncAt Column will be set with Time.now (if present)
-    def touch_sync
-      self.lastSyncAt = Time.now if self.respond_to?(:lastSyncAt=)
+      self.id = nil if self.id.present? && save_action == :create
+
+      params = build_hash_from_model(self.class.name.underscore, self)
+      params.merge!(options[:params]) if options[:params].present?
+
+      model = self
+
+      save_remote_call(params) do |response|
+        if response.ok? && response.body.present?
+          begin
+            json = BW::JSON.parse(response.body.to_str)
+
+            model.wrap json
+            model.save
+            model.touch_sync
+          rescue BW::JSON::ParserError
+            model = nil
+          end
+        else
+          model = nil
+        end
+
+        block.call(model, json) if block.present? && block.respond_to?(:call)
+      end
     end
 
     # Returns a hash with given model
@@ -186,27 +215,9 @@ module MotionModelResource
       end
     end
 
-    private
-
-    def save_remote(options, &block)
-      raise MotionModelResource::URLNotDefinedError.new "URL is not defined for #{self.class.name}!" unless self.class.respond_to?(:url)
-
-      self.id = nil if self.id.present? && save_action == :create
-
-      params = build_hash_from_model(self.class.name.downcase, self)
-      params.merge!(options[:params]) if options[:params].present?
-
-      save_remote_call(params) do |response|
-        model = nil
-        if response.ok? && response.body.present?
-          json = BW::JSON.parse(response.body.to_str)
-
-          model = self.class.save_model_with(json)
-        end
-
-        block.call(model) if block.present? && block.respond_to?(:call)
-      end
     end
+
+    private
 
     # Returns the action for save
     def save_action

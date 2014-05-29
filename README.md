@@ -17,7 +17,7 @@ Installation
 ------------
 Add the following line to your `Gemfile`:
 
-`gem "motion-model-resource"`
+`gem "motion_model_resource"`
 
 You need to require the Gem. Insert the
 following immediately before `Motion::Project::App.setup`:

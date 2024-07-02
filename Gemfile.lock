@@ -8,7 +8,7 @@ GEM
     motion_model (0.4.4)
       bubble-wrap (= 1.3.0.osx)
       motion-support (>= 0.1.0)
-    rake (10.0.4)
+    rake (12.3.3)
     webstub (0.3.7)
 
 PLATFORMS
